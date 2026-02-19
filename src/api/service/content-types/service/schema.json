@@ -1,0 +1,74 @@
+{
+  "kind": "collectionType",
+  "collectionName": "services",
+  "info": {
+    "singularName": "service",
+    "pluralName": "services",
+    "displayName": "Service",
+    "description": "Appilot service offerings (automation, scraping, development, custom)"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "slug": {
+      "type": "uid",
+      "targetField": "name",
+      "required": true
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "label": {
+      "type": "string"
+    },
+    "category": {
+      "type": "enumeration",
+      "enum": ["Automation", "Scraping", "Development", "Custom"]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "description": {
+      "type": "richtext"
+    },
+    "image": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "icon": {
+      "type": "string"
+    },
+    "deliverables": {
+      "type": "json"
+    },
+    "startingPrice": {
+      "type": "integer"
+    },
+    "typicalDuration": {
+      "type": "string"
+    },
+    "platforms": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::platform.platform",
+      "inversedBy": "services"
+    },
+    "featuredBots": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::bot.bot",
+      "inversedBy": "relatedServices"
+    },
+    "relatedBlogs": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::blog.blog",
+      "mappedBy": "relatedServices"
+    }
+  }
+}

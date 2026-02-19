@@ -1,0 +1,85 @@
+{
+  "kind": "collectionType",
+  "collectionName": "bots",
+  "info": {
+    "singularName": "bot",
+    "pluralName": "bots",
+    "displayName": "Bot",
+    "description": "Appilot automation bot products"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "slug": {
+      "type": "uid",
+      "targetField": "name",
+      "required": true
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "role": {
+      "type": "string"
+    },
+    "description": {
+      "type": "richtext"
+    },
+    "quote": {
+      "type": "string"
+    },
+    "technologies": {
+      "type": "json"
+    },
+    "youtubeVideoId": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "decimal"
+    },
+    "logo": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "screenshots": {
+      "type": "media",
+      "multiple": true,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "platform": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::platform.platform",
+      "inversedBy": "bots",
+      "required": true
+    },
+    "relatedServices": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::service.service",
+      "mappedBy": "featuredBots"
+    },
+    "relatedBlogs": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::blog.blog",
+      "mappedBy": "relatedBots"
+    },
+    "useCases": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::use-case.use-case",
+      "inversedBy": "bots"
+    },
+    "manualRelatedBots": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::bot.bot"
+    }
+  }
+}
