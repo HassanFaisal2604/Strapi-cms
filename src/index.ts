@@ -111,11 +111,12 @@ export default {
   },
 
   bootstrap({ strapi }: { strapi: Core.Strapi }) {
-    // Register lifecycle hooks on the blog content type
+    // ---------------------------------------------------------------------------
+    // Blog — process base64 images in `content` field
+    // ---------------------------------------------------------------------------
     strapi.db.lifecycles.subscribe({
       models: ['api::blog.blog'],
 
-      // Before create — clean images before first save
       async beforeCreate(event) {
         const { data } = event.params;
         if (data?.content) {
@@ -123,11 +124,52 @@ export default {
         }
       },
 
-      // Before update — clean images on every save / republish
       async beforeUpdate(event) {
         const { data } = event.params;
         if (data?.content) {
           data.content = await processBase64Images(strapi, data.content as string);
+        }
+      },
+    });
+
+    // ---------------------------------------------------------------------------
+    // Service — process base64 images in `description` field
+    // ---------------------------------------------------------------------------
+    strapi.db.lifecycles.subscribe({
+      models: ['api::service.service'],
+
+      async beforeCreate(event) {
+        const { data } = event.params;
+        if (data?.description) {
+          data.description = await processBase64Images(strapi, data.description as string);
+        }
+      },
+
+      async beforeUpdate(event) {
+        const { data } = event.params;
+        if (data?.description) {
+          data.description = await processBase64Images(strapi, data.description as string);
+        }
+      },
+    });
+
+    // ---------------------------------------------------------------------------
+    // Bot — process base64 images in `description` field
+    // ---------------------------------------------------------------------------
+    strapi.db.lifecycles.subscribe({
+      models: ['api::bot.bot'],
+
+      async beforeCreate(event) {
+        const { data } = event.params;
+        if (data?.description) {
+          data.description = await processBase64Images(strapi, data.description as string);
+        }
+      },
+
+      async beforeUpdate(event) {
+        const { data } = event.params;
+        if (data?.description) {
+          data.description = await processBase64Images(strapi, data.description as string);
         }
       },
     });
