@@ -509,7 +509,8 @@ export interface ApiBlogBlog extends Struct.CollectionTypeSchema {
   };
   attributes: {
     author: Schema.Attribute.String;
-    content: Schema.Attribute.RichText;
+    content: Schema.Attribute.Text &
+      Schema.Attribute.CustomField<'global::richtext-html-paste'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -553,7 +554,8 @@ export interface ApiBotBot extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    description: Schema.Attribute.RichText;
+    description: Schema.Attribute.Text &
+      Schema.Attribute.CustomField<'global::richtext-html-paste'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::bot.bot'> &
       Schema.Attribute.Private;
@@ -709,7 +711,8 @@ export interface ApiServiceService extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     deliverables: Schema.Attribute.JSON;
-    description: Schema.Attribute.RichText;
+    description: Schema.Attribute.Text &
+      Schema.Attribute.CustomField<'global::richtext-html-paste'>;
     featuredBots: Schema.Attribute.Relation<'manyToMany', 'api::bot.bot'>;
     icon: Schema.Attribute.String;
     image: Schema.Attribute.Media<'images'>;
