@@ -1,8 +1,11 @@
 /**
  * Option A: Compress every uploaded image on disk after creation.
  * Copy this block into strapi-cms/src/index.ts inside bootstrap({ strapi }) { ... }.
- * Ensure these top-level imports exist: sharp, path, fs.
  */
+import path from 'path';
+import fs from 'fs';
+import sharp from 'sharp';
+
 const MAX_WIDTH = 1920;
 const MAX_HEIGHT = 1920;
 const JPEG_QUALITY = 82;
