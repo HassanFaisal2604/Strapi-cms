@@ -1,5 +1,10 @@
 import type { Core } from '@strapi/strapi';
-import { Readable } from 'stream';
+import sharp from 'sharp';
+import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
+import intoStream from 'into-stream';
+import cloudinary from 'cloudinary';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -25,38 +30,95 @@ function extractBase64Images(html: string) {
   return matches;
 }
 
+const IMAGE_MAX_WIDTH = 1920;
+const IMAGE_MAX_HEIGHT = 1920;
+const TARGET_MAX_BYTES = 100 * 1024; // 100 KB
+const WEBP_QUALITY_START = 82;
+const WEBP_QUALITY_MIN = 40;
+
 /**
- * Upload a single base64 image buffer via Strapi's upload service.
- * Returns the uploaded file record (with .url).
+ * Convert to WebP (target under 100 KB), upload buffer directly to Cloudinary, create Strapi file document.
+ * Bypasses Strapi's upload pipeline so no temp file is created (fixes EBUSY on Windows).
  */
 async function uploadBase64Image(
   strapiInstance: Core.Strapi,
   base64: string,
-  mimeType: string,
-  ext: string,
+  _mimeType: string,
+  _ext: string,
   index: number
 ): Promise<{ url: string } | null> {
+  const name = `blog-image-${Date.now()}-${index}.webp`;
+  const hash = crypto.randomBytes(12).toString('hex');
   try {
-    const buffer = Buffer.from(base64, 'base64');
-    const filename = `blog-image-${Date.now()}-${index}.${ext}`;
+    const inputBuffer = Buffer.from(base64, 'base64');
+    let webpBuffer: Buffer;
+    let width = IMAGE_MAX_WIDTH;
+    let quality = WEBP_QUALITY_START;
 
-    // Strapi upload service expects a file-like object
-    const file = {
-      name: filename,
-      type: mimeType,
-      size: buffer.length,
-      buffer,
-      // Strapi upload service also accepts a stream
-      stream: Readable.from(buffer),
-    };
+    do {
+      webpBuffer = await sharp(inputBuffer)
+        .resize(width, IMAGE_MAX_HEIGHT, { fit: 'inside', withoutEnlargement: true })
+        .webp({ quality })
+        .toBuffer();
+      if (webpBuffer.length <= TARGET_MAX_BYTES) break;
+      if (quality > WEBP_QUALITY_MIN) {
+        quality = Math.max(WEBP_QUALITY_MIN, quality - 15);
+      } else if (width > 640) {
+        width = Math.max(640, Math.floor(width * 0.75));
+        quality = WEBP_QUALITY_START;
+      } else {
+        break;
+      }
+    } while (true);
 
-    const uploadService = strapiInstance.plugin('upload').service('upload');
-    const [uploaded] = await uploadService.upload({
-      data: {},
-      files: file,
+    const originalKB = (inputBuffer.length / 1024).toFixed(1);
+    const compressedKB = (webpBuffer.length / 1024).toFixed(1);
+    strapiInstance.log.info(`[blog-image-extract] Image #${index + 1} size: ${originalKB} KB → ${compressedKB} KB`);
+
+    const folder = process.env.CLOUDINARY_FOLDER || 'appilot';
+    cloudinary.v2.config({
+      cloud_name: process.env.CLOUDINARY_NAME,
+      api_key: process.env.CLOUDINARY_KEY,
+      api_secret: process.env.CLOUDINARY_SECRET,
     });
 
-    return uploaded ?? null;
+    const result = await new Promise<{ secure_url: string; public_id: string; resource_type: string } | null>(
+      (resolve, reject) => {
+        const uploadStream = cloudinary.v2.uploader.upload_stream(
+          {
+            resource_type: 'image',
+            public_id: hash,
+            folder: folder || undefined,
+          },
+          (err, image) => {
+            if (err) reject(err);
+            else resolve(image ?? null);
+          }
+        );
+        intoStream(webpBuffer).pipe(uploadStream);
+      }
+    );
+
+    if (!result) return null;
+
+    await strapiInstance.documents('plugin::upload.file').create({
+      data: {
+        name,
+        hash,
+        ext: '.webp',
+        mime: 'image/webp',
+        size: webpBuffer.length,
+        url: result.secure_url,
+        provider: 'cloudinary',
+        folderPath: '/',
+        provider_metadata: {
+          public_id: result.public_id,
+          resource_type: result.resource_type,
+        },
+      },
+    });
+
+    return { url: result.secure_url };
   } catch (err) {
     strapiInstance.log.warn(`[blog-image-extract] Failed to upload image #${index}: ${err}`);
     return null;
@@ -170,6 +232,44 @@ export default {
         const { data } = event.params;
         if (data?.description) {
           data.description = await processBase64Images(strapi, data.description as string);
+        }
+      },
+    });
+
+    // ---------------------------------------------------------------------------
+    // Upload — compress images on disk after creation (Option A)
+    // ---------------------------------------------------------------------------
+    const MAX_WIDTH = 1920;
+    const MAX_HEIGHT = 1920;
+    const JPEG_QUALITY = 82;
+    const PNG_COMPRESSION = 6;
+
+    strapi.db.lifecycles.subscribe({
+      models: ['plugin::upload.file'],
+      afterCreate: async ({ result }) => {
+        if (!result?.mime?.startsWith('image/')) return;
+        const filePath = result.path
+          ? path.join(strapi.dirs.static.public, result.path)
+          : null;
+        if (!filePath || !fs.existsSync(filePath)) return;
+        console.log('[image-compress] Image detected for compression:', result.path, result.name, result.mime);
+        try {
+          const pipeline = sharp(filePath)
+            .resize(MAX_WIDTH, MAX_HEIGHT, { fit: 'inside', withoutEnlargement: true });
+          const mime = (result.mime || '').toLowerCase();
+          const buf =
+            mime === 'image/png'
+              ? await pipeline.png({ compressionLevel: PNG_COMPRESSION }).toBuffer()
+              : await pipeline
+                  .jpeg({ quality: JPEG_QUALITY })
+                  .toBuffer()
+                  .catch(() => pipeline.toBuffer());
+          fs.writeFileSync(filePath, buf);
+          console.log('[image-compress] Image compressed successfully:', result.path);
+          strapi.log.debug('[image-compress] compressed ' + result.path);
+        } catch (e) {
+          console.error('[image-compress] Compression failed:', result.path, e);
+          strapi.log.warn('[image-compress] afterCreate failed', e);
         }
       },
     });
