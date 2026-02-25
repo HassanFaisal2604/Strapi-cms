@@ -75,11 +75,23 @@ async function uploadBase64Image(
     const compressedKB = (webpBuffer.length / 1024).toFixed(1);
     strapiInstance.log.info(`[blog-image-extract] Image #${index + 1} size: ${originalKB} KB → ${compressedKB} KB`);
 
+    const cloudName = process.env.CLOUDINARY_NAME;
+    const apiKey = process.env.CLOUDINARY_KEY;
+    const apiSecret = process.env.CLOUDINARY_SECRET;
+    if (!cloudName || !apiKey || !apiSecret) {
+      const missing = [
+        !cloudName && 'CLOUDINARY_NAME',
+        !apiKey && 'CLOUDINARY_KEY',
+        !apiSecret && 'CLOUDINARY_SECRET',
+      ].filter(Boolean);
+      strapiInstance.log.warn(`[blog-image-extract] Skipping upload: set ${missing.join(', ')} in .env and restart Strapi.`);
+      return null;
+    }
     const folder = process.env.CLOUDINARY_FOLDER || 'appilot';
     cloudinary.v2.config({
-      cloud_name: process.env.CLOUDINARY_NAME,
-      api_key: process.env.CLOUDINARY_KEY,
-      api_secret: process.env.CLOUDINARY_SECRET,
+      cloud_name: cloudName,
+      api_key: apiKey,
+      api_secret: apiSecret,
     });
 
     const result = await new Promise<{ secure_url: string; public_id: string; resource_type: string } | null>(

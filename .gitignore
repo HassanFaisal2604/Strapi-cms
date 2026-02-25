@@ -76,6 +76,7 @@ $RECYCLE.BIN/
 ############################
 
 *#
+backup-extract
 ssl
 .idea
 nbproject
