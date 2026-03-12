@@ -1,9 +1,9 @@
 /**
  * Custom richtext Input that preserves HTML when pasting from Google Docs (or any source).
  * On paste, uses clipboard text/html when available so formatting is kept.
- * Inline font-family, font-size, color, and background-color styles are stripped
- * so the frontend CSS controls all typography consistently.
- * Stores and emits HTML string; backend uses type "text" so HTML is persisted as-is.
+ * For blog, service, and bot content we intentionally preserve the pasted HTML
+ * and inline styles as-is so the website can render the content closely to the source.
+ * Stores and emits an HTML string; backend uses type "text" so HTML is persisted as-is.
  */
 
 import React, { useRef, useEffect, useCallback } from 'react';
@@ -20,56 +20,6 @@ interface RichtextHtmlPasteInputProps {
   description?: { id?: string; defaultMessage?: string };
   error?: string;
   hint?: string;
-}
-
-/**
- * Walk every element in a DocumentFragment (or Element) and remove inline style
- * properties that would override the frontend's typography system.
- * Code/pre blocks are left untouched.
- */
-function stripTypographyStyles(root: DocumentFragment | Element): void {
-  const BLOCKED_PROPS = [
-    'fontFamily',
-    'fontSize',
-    'color',
-    'backgroundColor',
-    'lineHeight',
-    'fontWeight',  // keep structural weight? set to false to also strip bold
-  ];
-
-  // Properties we intentionally keep: fontWeight, fontStyle (italic), textDecoration (underline/strike)
-  const KEEP_PROPS = new Set(['fontStyle', 'textDecoration', 'fontWeight']);
-
-  const walker = document.createTreeWalker(root as Node, NodeFilter.SHOW_ELEMENT);
-  const elements: Element[] = [];
-  let node: Node | null = walker.currentNode;
-  while (node) {
-    elements.push(node as Element);
-    node = walker.nextNode();
-  }
-
-  for (const el of elements) {
-    const tag = (el as HTMLElement).tagName?.toLowerCase();
-    // Leave code/pre untouched
-    if (tag === 'code' || tag === 'pre') continue;
-
-    const htmlEl = el as HTMLElement;
-    if (!htmlEl.style) continue;
-
-    // Remove only the typography-related inline props, keep others (e.g. text-align)
-    BLOCKED_PROPS.forEach((prop) => {
-      if (!KEEP_PROPS.has(prop)) {
-        htmlEl.style.removeProperty(
-          prop.replace(/([A-Z])/g, (m) => `-${m.toLowerCase()}`)
-        );
-      }
-    });
-
-    // Also remove Google Docs span wrappers that carry only empty/whitespace styles
-    if (tag === 'span' && htmlEl.getAttribute('style')?.trim() === '') {
-      htmlEl.removeAttribute('style');
-    }
-  }
 }
 
 export function RichtextHtmlPasteInput({
@@ -134,9 +84,8 @@ export function RichtextHtmlPasteInput({
       const rangeInEditor = range && el.contains(range.commonAncestorContainer);
 
       if (html) {
-        // Parse into a fragment, strip inline typography styles, then insert
+        // Parse into a fragment and keep the pasted HTML/styles intact.
         const fragment = el.ownerDocument.createRange().createContextualFragment(html);
-        stripTypographyStyles(fragment);
 
         if (rangeInEditor) {
           range.deleteContents();

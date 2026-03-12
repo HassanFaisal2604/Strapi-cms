@@ -129,7 +129,7 @@ async function uploadBase64Image(
         },
       },
     });
-
+//this is the url that will be used to display the image in the blog post
     return { url: result.secure_url };
   } catch (err) {
     strapiInstance.log.warn(`[blog-image-extract] Failed to upload image #${index}: ${err}`);
