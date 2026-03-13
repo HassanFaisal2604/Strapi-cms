@@ -1,8 +1,8 @@
 /**
  * Custom richtext Input that preserves HTML when pasting from Google Docs (or any source).
  * On paste, uses clipboard text/html when available so formatting is kept.
- * Inline font-family, font-size, color, and background-color styles are stripped
- * so the frontend CSS controls all typography consistently.
+ * Inline font-family and background-color styles are stripped so the frontend CSS
+ * controls typography, but font-size and color from the source document are preserved.
  * Stores and emits HTML string; backend uses type "text" so HTML is persisted as-is.
  */
 
@@ -30,11 +30,8 @@ interface RichtextHtmlPasteInputProps {
 function stripTypographyStyles(root: DocumentFragment | Element): void {
   const BLOCKED_PROPS = [
     'fontFamily',
-    'fontSize',
-    'color',
     'backgroundColor',
     'lineHeight',
-    'fontWeight',  // keep structural weight? set to false to also strip bold
   ];
 
   // Properties we intentionally keep: fontWeight, fontStyle (italic), textDecoration (underline/strike)
