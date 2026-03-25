@@ -174,6 +174,9 @@ async function processBase64Images(strapiInstance: Core.Strapi, html: string): P
 
 export default {
   register({ strapi }: { strapi: Core.Strapi }) {
+    // #region agent log H-D: server register lifecycle
+    strapi.log.info('[DEBUG-33de34][H-D] server register() called — registering global::richtext-html-paste');
+    // #endregion
     strapi.customFields.register({
       name: 'richtext-html-paste',
       type: 'text',
@@ -182,6 +185,9 @@ export default {
         isResizable: true,
       },
     });
+    // #region agent log H-D: after server register
+    strapi.log.info('[DEBUG-33de34][H-D] server customFields.register() completed');
+    // #endregion
   },
 
   bootstrap({ strapi }: { strapi: Core.Strapi }) {

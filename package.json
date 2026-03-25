@@ -9,6 +9,7 @@
     "deploy": "strapi deploy",
     "dev": "strapi develop",
     "develop": "strapi develop",
+    "test:admin-richtext": "node --test ./tests/richtextHtmlUtils.test.cjs",
     "seed:example": "node ./scripts/seed.js",
     "seed:appilot": "node ./scripts/seed-appilot.js",
     "seed:platform-relations": "node ./scripts/seed-platform-relations.js",
@@ -24,6 +25,7 @@
     "@strapi/plugin-users-permissions": "5.36.0",
     "@strapi/provider-upload-cloudinary": "^5.36.1",
     "@strapi/strapi": "5.36.0",
+    "@tinymce/tinymce-react": "^6.3.0",
     "better-sqlite3": "12.4.1",
     "fs-extra": "^10.0.0",
     "mime-types": "^2.1.27",
@@ -32,7 +34,8 @@
     "react-dom": "^18.0.0",
     "react-router-dom": "^6.0.0",
     "sharp": "^0.34.5",
-    "styled-components": "^6.0.0"
+    "styled-components": "^6.0.0",
+    "tinymce": "^8.3.2"
   },
   "devDependencies": {
     "@types/node": "^20",
